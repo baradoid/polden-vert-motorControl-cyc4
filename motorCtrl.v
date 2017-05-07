@@ -1,6 +1,6 @@
 module motorCtrl(
 	input CLK_50MHZ,
-	input [23:0] velocityMax_div,
+	input [19:0] velocityMax_div,
 	input [15:0] deltaPos,
 	input newPosSignal,
 	output reg dir,
@@ -10,15 +10,16 @@ module motorCtrl(
 );
 
 parameter idleState = 0;
-parameter speedUpState = 1;
-parameter speedConstState = 2;
-parameter speedDownSpeedState = 3;
-parameter speedConstState2 = 4;
+parameter readFifoState = 1;
+parameter calcAllValues = 2;
+parameter speedUpState = 3;
+parameter speedConstState = 4;
+parameter speedDownSpeedState = 5;
+parameter speedConstState2 = 6;
 
 parameter speedDeviationCount = 8'd244; //244*4,096 ms ~ 1sec
 
-reg [7:0] deltaPosLoc = 100;
-reg [1:0] state = idleState;
+reg [2:0] state = idleState;
 reg [15:0] timer5msPulsesCnt = 0;
 reg [15:0] timer10msPulsesCnt = 0;
 reg [7:0] timer15625mksPulsesCnt = 0; //15625 in 50MHz
@@ -50,58 +51,78 @@ reg stepClockEna = 0;
 reg [19:0] movePeriodSpeedIncTimeCounter = 0;
  
 //parameter velocity_div_start = 24'hF424;
-parameter velocity_div_start = 24'h1E848;
+parameter velocity_div_start = 20'h1E848;
 //parameter velocity_div_start = 24'h1312d0;
 
-reg [7:0] sinTable [63:0];
-//reg [3:0] memory [15:0] ;
-initial $readmemh("sin_init.hex", sinTable, 0) ;
-
-
-reg [7:0] sinTableCurInd = 0;
-reg [7:0] sinTableCurVal = 0;
 
 //wire [23:0] dividerIncWire = velocity_div_start - velocityMax_div;
 
-reg [23:0] velocityDeviation2Max_divLoc;
-reg [31:0] velocityDeviation2MaxMultSin;
+reg [19:0] velocityMax_divLoc;
+//reg [19:0] velocityDeviation2Max_divLoc;
+wire [35:0] velocityDeviationMultSin;
+wire [19:0] velocityDivStartMaxDelta;
+
+reg [5:0] sinTableAddr = 0;
+//reg [7:0] sinTableCurInd = 0;
+//reg [7:0] sinTableCurVal = 0;
+wire [15:0] sinVal;
+
+
+
+add20b sub20_deviaton(.dataa(velocity_div_start[19:0]), .datab(velocityMax_divLoc[19:0]), .result(velocityDivStartMaxDelta[19:0]));
+sinrom sinTable(.clock(CLK_50MHZ), .address(sinTableAddr[5:0]), .q(sinVal[15:0]));
+mult mpl(.dataa(sinVal[15:0]), .datab(velocityDivStartMaxDelta[19:0]), .result(velocityDeviationMultSin[35:0]));
+
+//add20b sub20_divider(.dataa(velocity_div_start[19:0]), .datab(velocityDeviationMultSin[27:8]), .result(curVelocityDiv[19:0]));
+wire [19:0] curVelocityDiv = velocityMax_divLoc[19:0] + velocityDeviationMultSin[35:16];
+
+	
+wire fifoEmpty;
+reg rdReq = 0;
+wire [19:0] fifoQ;
+mcCmdFifo cmdFifo(.clock(CLK_50MHZ), .data(velocityMax_div), .rdreq(rdReq), .wrreq(newPosSignal), .empty(fifoEmpty), .q(fifoQ));
 
 always @(posedge CLK_50MHZ) begin
-	//if(velocity_rpm_locked != velocity_rpm) begin
-		//velocity_rpm_locked <= velocity_rpm;	
-	//end
-	
-	
-	if(newPosSignal) begin
-		//new_position <= newPos;
-		//state <= speedConstState;		
-		//if(newPos > new_position) begin
-		//	dir <= 1;
-		//end
-		dir <= 0;
-		divider <= velocity_div_start;
-		velocityDeviation2Max_divLoc <= (velocity_div_start-velocityMax_div);
-		
-		//dividerInc[15:0] <= dividerIncWire[22:7];
-		
-		clockCounter <= 0;
-		timer5msPulsesCnt <= 100;
-		timer10msPulsesCnt <= 128;
-		timer15625mksPulsesCnt <= 63;
-		stepClockEna <= 1;
-		state <= speedUpState;
-		deltaPosLoc <= deltaPos; 		
-		sinTableCurInd <= 0;
-	end
-	
-	sinTableCurVal[7:0] <=sinTable[sinTableCurInd];
-	velocityDeviation2MaxMultSin[31:0] <= velocityDeviation2Max_divLoc[23:0]*sinTable[sinTableCurInd];
-
-
 	case(state)
 		idleState: begin
-			//state <= speedUpState;
+			if(!fifoEmpty) begin
+
+				rdReq <= 1'b1;		
+				velocityMax_divLoc <= fifoQ;
+				divider[19:0] <= velocity_div_start; //velocity_div_start[19:0]+velocityMax_div[19:0];
+				//velocityDeviation2Max_divLoc[19:0] <= (velocity_div_start[19:0]-velocityMax_div[19:0]);
+						
+				sinTableAddr <= 0;		
+		
+				state <= calcAllValues;
+			end
+//			
+//			if(newPosSignal) begin
+//
+//				velocityMax_divLoc <= velocityMax_div;
+//				divider[19:0] <= velocity_div_start; //velocity_div_start[19:0]+velocityMax_div[19:0];
+//				//velocityDeviation2Max_divLoc[19:0] <= (velocity_div_start[19:0]-velocityMax_div[19:0]);
+//				
+//				timer5msPulsesCnt <= 100;
+//				timer10msPulsesCnt <= 128;
+//				state <= readFifoState;		
+//				sinTableAddr <= 0;
+//			end
+		
 			//stepClockEna <= 0;
+		end
+		
+		//readFifoState: begin			
+		//	state <= calcAllValues;
+		//end
+		
+		calcAllValues: begin
+			rdReq <= 1'b0;	
+			divider[19:0] <= curVelocityDiv[19:0]; 
+			state <= speedUpState;
+			timer15625mksPulsesCnt <= 63;
+			stepClockEna <= 1;
+			clockCounter <= 0;
 		end
 		
 		speedUpState: begin					
@@ -111,8 +132,8 @@ always @(posedge CLK_50MHZ) begin
 			end
 			if(clock_15625mks) begin			
 				//if(divider > 20'h115) begin
-					divider[19:0] <= velocity_div_start - velocityDeviation2MaxMultSin[31:12];
-					sinTableCurInd <= sinTableCurInd + 1;
+					divider[19:0] <= curVelocityDiv[19:0]; //velocityMax_divLoc[19:0]  + velocityDeviation2MaxMultSin[27:8];
+					sinTableAddr <= sinTableAddr + 1;
 				//end
 				//else begin
 				//	state <= speedConstState;
@@ -125,9 +146,9 @@ always @(posedge CLK_50MHZ) begin
 		speedConstState: begin	
 			if(timer10msFinal) begin
 				state <= speedDownSpeedState;
-				timer10msPulsesCnt <= 128;
+				//timer10msPulsesCnt <= 128;
 				timer15625mksPulsesCnt <= 63;
-				sinTableCurInd <= 63;
+				//sinTableAddr <= 0;
 			end
 		end
 		
@@ -137,8 +158,8 @@ always @(posedge CLK_50MHZ) begin
 				stepClockEna <= 0;
 			end
 			if(clock_15625mks) begin			
-					divider[19:0] <= velocity_div_start - velocityDeviation2MaxMultSin[31:12];
-					sinTableCurInd <= sinTableCurInd - 1;
+					divider[19:0] <=  curVelocityDiv[19:0]; //velocityMax_divLoc[19:0] + velocityDeviation2MaxMultSin[27:8];
+					sinTableAddr <= sinTableAddr - 1;
 			end
 
 //			if(clock_10ms) begin			

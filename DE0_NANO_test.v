@@ -51,7 +51,7 @@ reg [3:0] posNum;
 reg [11:0] newPosSignal ;
 reg sign = 0;
 //assign AGPIO[34] = sign;
-reg [23:0] velocityMax_div = 0;
+reg [19:0] velocityMax_div = 0;
 always @(posedge CLOCK_50) begin
 
 		
@@ -61,8 +61,10 @@ always @(posedge CLOCK_50) begin
 					if(uartRxData == "S") begin
 						//uartState <= recvNum;	
 						uartState <= uartIdle;
-						//velocityMax_div <= 24'h271;
-						velocityMax_div <= 24'h115;
+						//velocityMax_div <= 20'h341;
+						//velocityMax_div <= 20'h271;
+						velocityMax_div <= 20'h1F4;
+						//velocityMax_div <= 20'h115;
 						newPosSignal[0] <=1'b1;	
 						sign <=1'b1;
 						LED[1] <= 1'b1;						

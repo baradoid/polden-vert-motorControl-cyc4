@@ -37,8 +37,9 @@ wire [7:0] uartRxData;
 
 parameter uartIdle = 0; 
 parameter recvNum = 1;
-parameter recvPos = 2;
-parameter processCmd = 3;
+parameter recvDir = 2;
+parameter recvPos = 3;
+parameter processCmd = 4;
 
 reg [2:0] uartState = uartIdle;
 
@@ -47,12 +48,18 @@ async_receiver #(.ClkFrequency(50000000), .Baud(230400)) RX(.clk(CLOCK_50),
 																				 .RxD(gpio0_IN[0]), 
 																				 .RxD_data_ready(uartRxDataReady), 
 																				 .RxD_data(uartRxData));
-reg [23:0] newPos;
+//reg [23:0] newPos;
+reg [15:0] deltaPos;
 reg [3:0] posNum;
 reg [11:0] newPosSignal ;
 reg sign = 0;
 //assign AGPIO[34] = sign;
 reg [19:0] velocityMax_div = 0;
+reg dir = 0;
+
+wire [26:0] speedDiv; 
+speed_divis(.numer(26'd50000000), .denom({2'h0,deltaPos[15:2]}), .quotient(speedDiv));
+
 always @(posedge CLOCK_50) begin
 
 		
@@ -73,22 +80,31 @@ always @(posedge CLOCK_50) begin
 					
 				end			
 				recvNum: begin
-					uartState <= recvPos;							
+					uartState <= recvDir;							
 					posNum <= uartRxData - 8'h30;					
-					sign <=1'b0;											
+					sign <=1'b0;			
+					
+					deltaPos <= 16'hffff;
 										
+				end
+				recvDir: begin
+					dir <= uartRxData[0]; 
+					uartState <= recvPos;							
 				end
 				recvPos: begin
 					uartState <= processCmd;
 					
-					//velocityMax_div <= 20'h341;
+					velocityMax_div <= 20'h341;
 					//velocityMax_div <= 20'h271;
-					velocityMax_div <= 20'h1F4;
+					//velocityMax_div <= 20'h1F4;
 					//velocityMax_div <= 20'h115;
+					//velocityMax_div <= speedDiv;
+					
 					
 					sign <=1'b1;
 					
-					newPos <= uartRxData;
+					//newPos <= uartRxData;
+					//deltaPos <= 16'hffff;
 					
 					
 					LED[3] <= 1'b1;
@@ -120,16 +136,16 @@ end
 
 																				 
 //assign gpio0[3] = CLOCK_50;
-motorCtrl mr00(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[0]), .velocityMax_div(velocityMax_div), .dir(gpio0[0]), .step(gpio0[1]));
-motorCtrl mr01(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[1]), .velocityMax_div(velocityMax_div), .dir(gpio0[2]), .step(gpio0[3]));
-motorCtrl mr02(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[2]), .velocityMax_div(velocityMax_div), .dir(gpio0[4]), .step(gpio0[5]));
+motorCtrl mr00(.CLK_50MHZ(CLOCK_50), .deltaPos(deltaPos), .moveDir(dir), .newPosSignal(newPosSignal[0]), .velocityMax_div(velocityMax_div), .dir(gpio0[0]), .step(gpio0[1]));
+motorCtrl mr01(.CLK_50MHZ(CLOCK_50), .deltaPos(deltaPos), .newPosSignal(newPosSignal[1]), .velocityMax_div(velocityMax_div), .dir(gpio0[2]), .step(gpio0[3]));
+/*motorCtrl mr02(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[2]), .velocityMax_div(velocityMax_div), .dir(gpio0[4]), .step(gpio0[5]));
 motorCtrl mr03(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[3]), .velocityMax_div(velocityMax_div), .dir(gpio0[6]), .step(gpio0[7]));
 motorCtrl mr04(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[4]), .velocityMax_div(velocityMax_div), .dir(gpio0[8]), .step(gpio0[9]));
 motorCtrl mr05(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[5]), .velocityMax_div(velocityMax_div), .dir(gpio0[10]), .step(gpio0[11]));
 motorCtrl mr06(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[6]), .velocityMax_div(velocityMax_div), .dir(gpio0[12]), .step(gpio0[13]));
 motorCtrl mr07(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[7]), .velocityMax_div(velocityMax_div), .dir(gpio0[14]), .step(gpio0[15]));
 motorCtrl mr08(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[8]), .velocityMax_div(velocityMax_div), .dir(gpio0[16]), .step(gpio0[17]));
-motorCtrl mr09(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[9]), .velocityMax_div(velocityMax_div), .dir(gpio0[18]), .step(gpio0[19]));
+motorCtrl mr09(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[9]), .velocityMax_div(velocityMax_div), .dir(gpio0[18]), .step(gpio0[19]));*/
 
 //motorCtrl mr01(.CLK_10MHZ(CLK_SE_AR), .clock_4ms(clock_4ms), .deltaPos(newPos[1]), .newPosSignal(newPosSignal[1]), .dir(AGPIO[33]), .step(AGPIO[34]));
 //motorCtrl mr02(.CLK_10MHZ(CLK_SE_AR), .clock_4ms(clock_4ms), .deltaPos(newPos[2]), .newPosSignal(newPosSignal[2]), .dir(AGPIO[31]), .step(AGPIO[32]));

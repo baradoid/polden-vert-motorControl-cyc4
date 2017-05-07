@@ -2,6 +2,7 @@ module motorCtrl(
 	input CLK_50MHZ,
 	input [19:0] velocityMax_div,
 	input [15:0] deltaPos,
+	input moveDir,
 	input newPosSignal,
 	output reg dir,
 	output reg step,
@@ -62,6 +63,11 @@ reg [19:0] velocityMax_divLoc;
 wire [35:0] velocityDeviationMultSin;
 wire [19:0] velocityDivStartMaxDelta;
 
+reg [15:0] deltaPosLoc;
+
+reg moveDirLoc;
+
+
 reg [5:0] sinTableAddr = 0;
 //reg [7:0] sinTableCurInd = 0;
 //reg [7:0] sinTableCurVal = 0;
@@ -79,16 +85,22 @@ wire [19:0] curVelocityDiv = velocityMax_divLoc[19:0] + velocityDeviationMultSin
 	
 wire fifoEmpty;
 reg rdReq = 0;
-wire [19:0] fifoQ;
-mcCmdFifo cmdFifo(.clock(CLK_50MHZ), .data(velocityMax_div), .rdreq(rdReq), .wrreq(newPosSignal), .empty(fifoEmpty), .q(fifoQ));
+wire [36:0] fifoQ;
+mcCmdFifo cmdFifo(.clock(CLK_50MHZ), .data( {moveDir, deltaPos[15:0], velocityMax_div[19:0]} ), 
+						.rdreq(rdReq), .wrreq(newPosSignal), .empty(fifoEmpty), .q(fifoQ));
+						
 
+reg [15:0] deltaPosCur;
 always @(posedge CLK_50MHZ) begin
 	case(state)
 		idleState: begin
 			if(!fifoEmpty) begin
 
 				rdReq <= 1'b1;		
-				velocityMax_divLoc <= fifoQ;
+				velocityMax_divLoc <= fifoQ[19:0];
+				deltaPosLoc <= fifoQ[35:20];
+				moveDirLoc <= fifoQ[36];
+				
 				divider[19:0] <= velocity_div_start; //velocity_div_start[19:0]+velocityMax_div[19:0];
 				//velocityDeviation2Max_divLoc[19:0] <= (velocity_div_start[19:0]-velocityMax_div[19:0]);
 						
@@ -121,14 +133,19 @@ always @(posedge CLK_50MHZ) begin
 			divider[19:0] <= curVelocityDiv[19:0]; 
 			state <= speedUpState;
 			timer15625mksPulsesCnt <= 63;
+			
 			stepClockEna <= 1;
 			clockCounter <= 0;
+			
+			dir <= moveDirLoc;
+			deltaPosCur <= 16'h0;
 		end
 		
 		speedUpState: begin					
-			if(timer15625mksFinal) begin			
+			if((timer15625mksFinal) || (deltaPosCur[15:0] >= {2'h0,deltaPosLoc[15:2]}) ) begin		//если истёк таймер или прошли четверть пути
 				state <= speedConstState;					
 				timer10msPulsesCnt <= 100;
+				deltaPosCur[15:0] <= 0;
 			end
 			if(clock_15625mks) begin			
 				//if(divider > 20'h115) begin
@@ -138,22 +155,22 @@ always @(posedge CLK_50MHZ) begin
 				//else begin
 				//	state <= speedConstState;
 				//	timer10msPulsesCnt <= 1000;
-				//end
-				
+				//end				
 			end
 		end
 		
 		speedConstState: begin	
-			if(timer10msFinal) begin
+			if(timer10msFinal || (deltaPosCur[15:0] >= {1'b0,deltaPosLoc[15:1]}) ) begin //если истёк таймер или прошли половину
 				state <= speedDownSpeedState;
 				//timer10msPulsesCnt <= 128;
-				timer15625mksPulsesCnt <= 63;
-				//sinTableAddr <= 0;
+				timer15625mksPulsesCnt <= sinTableAddr;
+				sinTableAddr <= sinTableAddr-2;
+				deltaPosCur <= 16'h0;
 			end
 		end
 		
 		speedDownSpeedState: begin
-			if(timer15625mksFinal) begin			
+			if(timer15625mksFinal || (deltaPosCur[15:0] >=  deltaPosLoc[15:2])) begin				//если истёк таймер или прошли четверть пути
 				state <= idleState;	
 				stepClockEna <= 0;
 			end
@@ -180,6 +197,8 @@ always @(posedge CLK_50MHZ) begin
 			clockCounter <= divider;
 			step <= 1'b1;			
 			//deltaPosLoc <= deltaPosLoc - 1;
+			deltaPosCur <= deltaPosCur + 16'h1;
+	
 		end
 		else begin
 			clockCounter <= clockCounter - 1;
@@ -187,13 +206,13 @@ always @(posedge CLK_50MHZ) begin
 				step <= 1'b0;							
 		end
 
-		
-		if((step==1'b1) && (dir==1'b1)) begin
-			cur_position <= cur_position + 1;
-		end
-		if((step==1'b1) && (dir==1'b0)) begin
-			cur_position <= cur_position - 1;
-		end
+
+//		if((step==1'b1) && (dir==1'b1)) begin
+//			cur_position <= cur_position + 1;
+//		end
+//		if((step==1'b1) && (dir==1'b0)) begin
+//			cur_position <= cur_position - 1;
+//		end
 	end
 	
 	

@@ -38,6 +38,7 @@ wire [7:0] uartRxData;
 parameter uartIdle = 0; 
 parameter recvNum = 1;
 parameter recvPos = 2;
+parameter processCmd = 3;
 
 reg [2:0] uartState = uartIdle;
 
@@ -60,45 +61,58 @@ always @(posedge CLOCK_50) begin
 				uartIdle: begin				
 					if(uartRxData == "S") begin
 						//uartState <= recvNum;	
-						uartState <= uartIdle;
-						//velocityMax_div <= 20'h341;
-						//velocityMax_div <= 20'h271;
-						velocityMax_div <= 20'h1F4;
-						//velocityMax_div <= 20'h115;
-						newPosSignal[0] <=1'b1;	
-						sign <=1'b1;
-						LED[1] <= 1'b1;						
+						uartState <= recvNum;
+					//	LED[1] <= 1'b1;						
 					end
 					else begin
-						LED[0] <= 1'b0;						
-						LED[1] <= 1'b0;						
-						LED[2] <= 1'b0;						
-						LED[3] <= 1'b0;						
+					//	LED[0] <= 1'b0;						
+					//	LED[1] <= 1'b0;						
+					//	LED[2] <= 1'b0;						
+					//	LED[3] <= 1'b0;						
 					end	
 					
 				end			
 				recvNum: begin
-					posNum <= uartRxData;
-					uartState <= recvPos;	
-					
-					newPosSignal[posNum] <=1'b0;
-					sign <=1'b0;	
-					uartState <= uartIdle;
-					LED[2] <= 1'b1;	
+					uartState <= recvPos;							
+					posNum <= uartRxData - 8'h30;					
+					sign <=1'b0;											
 										
 				end
 				recvPos: begin
+					uartState <= processCmd;
+					
+					//velocityMax_div <= 20'h341;
+					//velocityMax_div <= 20'h271;
+					velocityMax_div <= 20'h1F4;
+					//velocityMax_div <= 20'h115;
+					
+					sign <=1'b1;
+					
 					newPos <= uartRxData;
-					newPosSignal[posNum] <=1'b1;
-					uartState <= uartIdle;
+					
+					
 					LED[3] <= 1'b1;
 					
+				end
+				
+				processCmd: begin
+					uartState <= uartIdle;					
+					newPosSignal[posNum] <=1'b1;
 				end
 			
 			endcase
 		end
 		else begin
 			newPosSignal[0] <=1'b0;	
+			newPosSignal[1] <=1'b0;	
+			newPosSignal[2] <=1'b0;	
+			newPosSignal[3] <=1'b0;	
+			newPosSignal[4] <=1'b0;	
+			newPosSignal[5] <=1'b0;	
+			newPosSignal[6] <=1'b0;	
+			newPosSignal[7] <=1'b0;	
+			newPosSignal[8] <=1'b0;	
+			newPosSignal[9] <=1'b0;	
 		end
 
 end
@@ -106,8 +120,8 @@ end
 
 																				 
 //assign gpio0[3] = CLOCK_50;
-motorCtrl mr00(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[0]), .velocityMax_div(velocityMax_div), .dir(gpio0[0]), .step(gpio0[1]), .debug15625mks(gpio0[2]));
-//motorCtrl mr01(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[1]), .velocityMax_div(velocityMax_div), .dir(gpio0[2]), .step(gpio0[3]));
+motorCtrl mr00(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[0]), .velocityMax_div(velocityMax_div), .dir(gpio0[0]), .step(gpio0[1]));
+motorCtrl mr01(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[1]), .velocityMax_div(velocityMax_div), .dir(gpio0[2]), .step(gpio0[3]));
 motorCtrl mr02(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[2]), .velocityMax_div(velocityMax_div), .dir(gpio0[4]), .step(gpio0[5]));
 motorCtrl mr03(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[3]), .velocityMax_div(velocityMax_div), .dir(gpio0[6]), .step(gpio0[7]));
 motorCtrl mr04(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[4]), .velocityMax_div(velocityMax_div), .dir(gpio0[8]), .step(gpio0[9]));
@@ -132,3 +146,4 @@ motorCtrl mr09(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newP
 
 
 endmodule
+

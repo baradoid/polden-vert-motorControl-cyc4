@@ -256,19 +256,22 @@ set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "2.5 V"
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name VERILOG_FILE nios/synthesis/nios.v
+set_global_assignment -name QIP_FILE nios/synthesis/nios.qip
 set_global_assignment -name VERILOG_FILE motorCtrl.v
 set_global_assignment -name VERILOG_FILE async.v
 set_global_assignment -name SDC_FILE DE0_NANO_test.SDC
 set_global_assignment -name HEX_FILE sin_init.hex
 set_global_assignment -name QIP_FILE sinrom.qip
-set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
-set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
-set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
-set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name QIP_FILE mult.qip
 set_global_assignment -name QIP_FILE add20b.qip
 set_global_assignment -name HEX_FILE sin_inv_init.hex
 set_global_assignment -name HEX_FILE sin_minus_1_inv_init.hex
 set_global_assignment -name QIP_FILE mcCmdFifo.qip
 set_global_assignment -name QIP_FILE speed_divis.qip
+set_global_assignment -name QIP_FILE add20b_2.qip
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

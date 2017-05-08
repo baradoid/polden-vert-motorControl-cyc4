@@ -9,7 +9,7 @@ module DE0_NANO_test(
 	input  CLOCK_50,
 
 	//////////// LED //////////
-	output reg [7:0] LED,
+	output [7:0] LED,
 
 	//////////// KEY //////////
 	input [1:0] KEY,
@@ -48,6 +48,29 @@ async_receiver #(.ClkFrequency(50000000), .Baud(230400)) RX(.clk(CLOCK_50),
 																				 .RxD(gpio0_IN[0]), 
 																				 .RxD_data_ready(uartRxDataReady), 
 																				 .RxD_data(uartRxData));
+
+reg txdStart = 0;																
+reg [7:0] txdData;	
+
+wire uartTxBusy;
+reg uartTxBusyR; always @(posedge CLOCK_50) uartTxBusyR <= uartTxBusy;
+wire uartTxBusyPE = uartTxBusy && ~uartTxBusyR;
+wire uartTxBusyNE = ~uartTxBusy && uartTxBusyR;
+wire uartTxFree = ~uartTxBusy && ~uartTxBusyR; 
+
+integer counter50MHz = 0; always @(posedge CLOCK_50) counter50MHz <= counter50MHz + 1;
+wire uartStartSignal = (counter50MHz[3:0]==4'hf);
+async_transmitter #(.ClkFrequency(50000000), .Baud(230400)) TX(.clk(CLOCK_50), 
+																					.TxD_start(txdStart),
+																					.TxD_data(txdData),
+																					.TxD(gpio0[2]),
+																					.TxD_busy(uartTxBusy));
+																					
+integer sendCounter = 0;
+integer uartStartSendTimerCounter = 0;
+integer uartSendByteTimerCounter = 0;
+integer speedDivToUart = 0;
+																					
 //reg [23:0] newPos;
 reg [15:0] deltaPos;
 reg [3:0] posNum;
@@ -58,10 +81,45 @@ reg [19:0] velocityMax_div = 0;
 reg dir = 0;
 
 wire [26:0] speedDiv; 
-speed_divis(.numer(26'd50000000), .denom({2'h0,deltaPos[15:2]}), .quotient(speedDiv));
+speed_divis spddiv(.numer(26'd50000000), .denom(deltaPos /*{2'h0,deltaPos[15:2]}*/), .quotient(speedDiv));
 
 always @(posedge CLOCK_50) begin
 
+		if((sendCounter == 0) && (uartStartSendTimerCounter == 0)) begin
+			speedDivToUart <= speedDiv;
+			sendCounter <= 8;			
+			uartStartSendTimerCounter <= 32'd25000000;
+		end
+		else begin
+			uartStartSendTimerCounter <= uartStartSendTimerCounter - 1;			
+		end
+		
+		if( (sendCounter>0) && uartTxFree && (uartStartSignal)) begin
+			if(sendCounter == 11) begin
+				txdStart <= 1;	
+				txdData <= "S";
+			end 
+			else if(sendCounter == 2) begin							
+					txdStart <= 1;	
+					txdData <= "\r";
+			end
+			else if(sendCounter == 1) begin							
+					txdStart <= 1;	
+					txdData <= "\n";
+			end
+			else begin
+					txdStart <= 1;	
+					speedDivToUart <= {8'h0, speedDivToUart[31:8]};
+					txdData <= speedDivToUart[7:0];
+			end
+			sendCounter <= sendCounter - 1;
+		end
+		if(uartTxBusy) begin			
+			uartSendByteTimerCounter <= uartSendByteTimerCounter - 1;
+		end
+		
+		if(uartTxBusyPE)
+			txdStart <= 1'b0;		
 		
 		if(uartRxDataReady) begin
 			case(uartState)
@@ -84,7 +142,8 @@ always @(posedge CLOCK_50) begin
 					posNum <= uartRxData - 8'h30;					
 					sign <=1'b0;			
 					
-					deltaPos <= 16'hffff;
+					//deltaPos <= 16'hffff;
+					deltaPos <= 16'd40000;
 										
 				end
 				recvDir: begin
@@ -107,7 +166,7 @@ always @(posedge CLOCK_50) begin
 					//deltaPos <= 16'hffff;
 					
 					
-					LED[3] <= 1'b1;
+					//LED[3] <= 1'b1;
 					
 				end
 				
@@ -137,7 +196,7 @@ end
 																				 
 //assign gpio0[3] = CLOCK_50;
 motorCtrl mr00(.CLK_50MHZ(CLOCK_50), .deltaPos(deltaPos), .moveDir(dir), .newPosSignal(newPosSignal[0]), .velocityMax_div(velocityMax_div), .dir(gpio0[0]), .step(gpio0[1]));
-motorCtrl mr01(.CLK_50MHZ(CLOCK_50), .deltaPos(deltaPos), .newPosSignal(newPosSignal[1]), .velocityMax_div(velocityMax_div), .dir(gpio0[2]), .step(gpio0[3]));
+//motorCtrl mr01(.CLK_50MHZ(CLOCK_50), .deltaPos(deltaPos), .newPosSignal(newPosSignal[1]), .velocityMax_div(velocityMax_div), .dir(gpio0[2]), .step(gpio0[3]));
 /*motorCtrl mr02(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[2]), .velocityMax_div(velocityMax_div), .dir(gpio0[4]), .step(gpio0[5]));
 motorCtrl mr03(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[3]), .velocityMax_div(velocityMax_div), .dir(gpio0[6]), .step(gpio0[7]));
 motorCtrl mr04(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[4]), .velocityMax_div(velocityMax_div), .dir(gpio0[8]), .step(gpio0[9]));
@@ -159,7 +218,8 @@ motorCtrl mr09(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newP
 //motorCtrl mr10(.CLK_10MHZ(CLK_SE_AR), .clock_4ms(clock_4ms), .newPos(newPos[10]), .newPosSignal(newPosSignal[10]), .dir(AGPIO[15]), .step(AGPIO[16]));
 //motorCtrl mr11(.CLK_10MHZ(CLK_SE_AR), .clock_4ms(clock_4ms), .newPos(newPos[11]), .newPosSignal(newPosSignal[11]), .dir(AGPIO[13]), .step(AGPIO[14]));
 
-
+//
+//nios nios(.clk_clk(CLOCK_50), .reset_reset_n(KEY[0]), .pio_external_connection_export(LED));
 
 endmodule
 

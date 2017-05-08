@@ -80,8 +80,8 @@ sinrom sinTable(.clock(CLK_50MHZ), .address(sinTableAddr[5:0]), .q(sinVal[15:0])
 mult mpl(.dataa(sinVal[15:0]), .datab(velocityDivStartMaxDelta[19:0]), .result(velocityDeviationMultSin[35:0]));
 
 //add20b sub20_divider(.dataa(velocity_div_start[19:0]), .datab(velocityDeviationMultSin[27:8]), .result(curVelocityDiv[19:0]));
-wire [19:0] curVelocityDiv = velocityMax_divLoc[19:0] + velocityDeviationMultSin[35:16];
-
+wire [19:0] curVelocityDiv; // = velocityMax_divLoc[19:0] + velocityDeviationMultSin[35:16];
+add20b_2 inst2(.dataa(velocityMax_divLoc[19:0]), .datab(velocityDeviationMultSin[35:16]), .result(curVelocityDiv[19:0]));
 	
 wire fifoEmpty;
 reg rdReq = 0;
@@ -98,6 +98,7 @@ always @(posedge CLK_50MHZ) begin
 
 				rdReq <= 1'b1;		
 				velocityMax_divLoc <= fifoQ[19:0];
+				//20'h341;
 				deltaPosLoc <= fifoQ[35:20];
 				moveDirLoc <= fifoQ[36];
 				
@@ -107,6 +108,7 @@ always @(posedge CLK_50MHZ) begin
 				sinTableAddr <= 0;		
 		
 				state <= calcAllValues;
+				
 			end
 //			
 //			if(newPosSignal) begin
@@ -130,7 +132,7 @@ always @(posedge CLK_50MHZ) begin
 		
 		calcAllValues: begin
 			rdReq <= 1'b0;	
-			divider[19:0] <= curVelocityDiv[19:0]; 
+			//divider[19:0] <= curVelocityDiv[19:0]; 
 			state <= speedUpState;
 			timer15625mksPulsesCnt <= 63;
 			
@@ -247,73 +249,6 @@ always @(posedge CLK_50MHZ) begin
 	
 end
 //
-//initial
-//begin
-//
-//	
-//	sinTable[00] = 8'd0;
-//	sinTable[01] = 8'd0;
-//	sinTable[02] = 8'd0;
-//	sinTable[03] = 8'd1;
-//	sinTable[04] = 8'd1;
-//	sinTable[05] = 8'd2;
-//	sinTable[06] = 8'd3;
-//	sinTable[07] = 8'd4;
-//	sinTable[08] = 8'd6;
-//	sinTable[09] = 8'd7;
-//	sinTable[11] = 8'd9;
-//	sinTable[12] = 8'd10;
-//	sinTable[13] = 8'd12;
-//	sinTable[14] = 8'd14;
-//	sinTable[15] = 8'd16;
-//	sinTable[16] = 8'd18;
-//	sinTable[17] = 8'd21;
-//	sinTable[18] = 8'd23;
-//	sinTable[19] = 8'd25;
-//	sinTable[20] = 8'd28;
-//	sinTable[21] = 8'd31;
-//	sinTable[22] = 8'd33;
-//	sinTable[23] = 8'd36;
-//	sinTable[24] = 8'd39;
-//	sinTable[25] = 8'd42;
-//	sinTable[26] = 8'd45;
-//	sinTable[27] = 8'd48;
-//	sinTable[28] = 8'd51;
-//	sinTable[29] = 8'd54;
-//	sinTable[30] = 8'd57;
-//	sinTable[31] = 8'd60;
-//	sinTable[32] = 8'd64;
-//	sinTable[33] = 8'd67;
-//	sinTable[34] = 8'd70;
-//	sinTable[35] = 8'd73;
-//	sinTable[36] = 8'd76;
-//	sinTable[37] = 8'd79;
-//	sinTable[38] = 8'd82;
-//	sinTable[39] = 8'd85;
-//	sinTable[40] = 8'd88;
-//	sinTable[41] = 8'd91;
-//	sinTable[42] = 8'd94;
-//	sinTable[43] = 8'd96;
-//	sinTable[44] = 8'd99;
-//	sinTable[45] = 8'd102;
-//	sinTable[46] = 8'd104;
-//	sinTable[47] = 8'd106;
-//	sinTable[48] = 8'd109;
-//	sinTable[49] = 8'd111;
-//	sinTable[50] = 8'd113;
-//	sinTable[51] = 8'd115;
-//	sinTable[52] = 8'd117;
-//	sinTable[53] = 8'd118;
-//	sinTable[54] = 8'd120;
-//	sinTable[55] = 8'd121;
-//	sinTable[56] = 8'd123;
-//	sinTable[57] = 8'd124;
-//	sinTable[58] = 8'd125;
-//	sinTable[59] = 8'd126;
-//	sinTable[60] = 8'd126;
-//	sinTable[61] = 8'd127;
-//	sinTable[62] = 8'd127;
-//	sinTable[63] = 8'd127;
-//end
+
 
 endmodule

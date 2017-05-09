@@ -39,7 +39,9 @@ parameter uartIdle = 0;
 parameter recvNum = 1;
 parameter recvDir = 2;
 parameter recvPos = 3;
-parameter processCmd = 4;
+parameter recvVelocity = 4;
+parameter processCmd = 5;
+reg [3:0] recvHalfByteCnt = 0;
 
 reg [2:0] uartState = uartIdle;
 
@@ -73,6 +75,7 @@ integer speedDivToUart = 0;
 																					
 //reg [23:0] newPos;
 reg [15:0] deltaPos;
+reg [19:0] velocityImpPerSec;
 reg [3:0] posNum;
 reg [11:0] newPosSignal ;
 reg sign = 0;
@@ -81,21 +84,21 @@ reg [19:0] velocityMax_div = 0;
 reg dir = 0;
 
 wire [26:0] speedDiv; 
-speed_divis spddiv(.numer(26'd50000000), .denom(deltaPos /*{2'h0,deltaPos[15:2]}*/), .quotient(speedDiv));
+speed_divis spddiv(.numer(26'd50000000), .denom(velocityImpPerSec /*{2'h0,deltaPos[15:2]}*/), .quotient(speedDiv));
 
 always @(posedge CLOCK_50) begin
 
 		if((sendCounter == 0) && (uartStartSendTimerCounter == 0)) begin
-			speedDivToUart <= speedDiv;
+			speedDivToUart <= debugDiv;//speedDiv;
 			sendCounter <= 8;			
-			uartStartSendTimerCounter <= 32'd25000000;
+			uartStartSendTimerCounter <= 32'd250000;
 		end
 		else begin
 			uartStartSendTimerCounter <= uartStartSendTimerCounter - 1;			
 		end
 		
 		if( (sendCounter>0) && uartTxFree && (uartStartSignal)) begin
-			if(sendCounter == 11) begin
+			if(sendCounter == 8) begin
 				txdStart <= 1;	
 				txdData <= "S";
 			end 
@@ -106,11 +109,11 @@ always @(posedge CLOCK_50) begin
 			else if(sendCounter == 1) begin							
 					txdStart <= 1;	
 					txdData <= "\n";
-			end
+			end			
 			else begin
-					txdStart <= 1;	
-					speedDivToUart <= {8'h0, speedDivToUart[31:8]};
+					txdStart <= 1;						
 					txdData <= speedDivToUart[7:0];
+					speedDivToUart[31:0] <= {8'h0, speedDivToUart[31:8]};
 			end
 			sendCounter <= sendCounter - 1;
 		end
@@ -120,6 +123,7 @@ always @(posedge CLOCK_50) begin
 		
 		if(uartTxBusyPE)
 			txdStart <= 1'b0;		
+		
 		
 		if(uartRxDataReady) begin
 			case(uartState)
@@ -148,17 +152,33 @@ always @(posedge CLOCK_50) begin
 				end
 				recvDir: begin
 					dir <= uartRxData[0]; 
-					uartState <= recvPos;							
+					uartState <= recvVelocity;	
+					recvHalfByteCnt <= 5;
+					velocityImpPerSec <= 0;
+					
 				end
+				recvVelocity: begin
+					
+					//velocityMax_div <= 20'h341;
+					if(uartRxData[7:0]>8'h39)
+						velocityImpPerSec[19:0] <= {velocityImpPerSec[15:0], uartRxData[3:0]+4'h9 };
+					else
+						velocityImpPerSec[19:0] <= {velocityImpPerSec[15:0], uartRxData[3:0]};
+					
+					recvHalfByteCnt <= recvHalfByteCnt - 1;
+					if(recvHalfByteCnt == 0) begin
+						uartState <= processCmd;					
+					end										
+				end
+				
 				recvPos: begin
 					uartState <= processCmd;
 					
-					velocityMax_div <= 20'h341;
-					//velocityMax_div <= 20'h271;
+					
+					velocityMax_div <= 20'h271;
 					//velocityMax_div <= 20'h1F4;
 					//velocityMax_div <= 20'h115;
-					//velocityMax_div <= speedDiv;
-					
+					//velocityMax_div <= speedDiv;					
 					
 					sign <=1'b1;
 					
@@ -192,10 +212,12 @@ always @(posedge CLOCK_50) begin
 
 end
 																				 
-
+wire [19:0] debugDiv;
 																				 
 //assign gpio0[3] = CLOCK_50;
-motorCtrl mr00(.CLK_50MHZ(CLOCK_50), .deltaPos(deltaPos), .moveDir(dir), .newPosSignal(newPosSignal[0]), .velocityMax_div(velocityMax_div), .dir(gpio0[0]), .step(gpio0[1]));
+motorCtrl mr00(.CLK_50MHZ(CLOCK_50), .deltaPos(deltaPos), .moveDir(dir), .newPosSignal(newPosSignal[0]), .velocityMaxIPS(velocityImpPerSec), .dir(gpio0[0]), .step(gpio0[1]), 
+																																																				.debugDeviationPeriod(gpio0[5]),
+																																																				.div(debugDiv));
 //motorCtrl mr01(.CLK_50MHZ(CLOCK_50), .deltaPos(deltaPos), .newPosSignal(newPosSignal[1]), .velocityMax_div(velocityMax_div), .dir(gpio0[2]), .step(gpio0[3]));
 /*motorCtrl mr02(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[2]), .velocityMax_div(velocityMax_div), .dir(gpio0[4]), .step(gpio0[5]));
 motorCtrl mr03(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[3]), .velocityMax_div(velocityMax_div), .dir(gpio0[6]), .step(gpio0[7]));

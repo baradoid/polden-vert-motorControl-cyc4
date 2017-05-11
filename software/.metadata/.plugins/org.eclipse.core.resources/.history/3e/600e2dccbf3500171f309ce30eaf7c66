@@ -1,0 +1,19 @@
+//Global variables defined in main program
+extern unsigned char RxBuf[RXBUFSIZE];// the receiver buffer.
+extern int RxHead; // the circular buffer index
+extern int RxTail;
+unsigned char _getchar()
+{
+ unsigned char temp;
+ while (RxTail == RxHead)
+ {
+ nr_delay(1);
+ }
+ temp = RxBuf[RxTail];
+ if (++RxTail > (RXBUFSIZE -1))
+ {
+ RxTail = 0;
+ }
+ return(temp);
+}
+

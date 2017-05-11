@@ -56,7 +56,7 @@ endmodule
 // Retrieval info: PRIVATE: Overflow NUMERIC "0"
 // Retrieval info: PRIVATE: RadixA NUMERIC "10"
 // Retrieval info: PRIVATE: RadixB NUMERIC "10"
-// Retrieval info: PRIVATE: Representation NUMERIC "1"
+// Retrieval info: PRIVATE: Representation NUMERIC "0"
 // Retrieval info: PRIVATE: SYNTH_WRAPPER_GEN_POSTFIX STRING "0"
 // Retrieval info: PRIVATE: ValidCtA NUMERIC "0"
 // Retrieval info: PRIVATE: ValidCtB NUMERIC "0"
@@ -68,7 +68,7 @@ endmodule
 // Retrieval info: LIBRARY: lpm lpm.lpm_components.all
 // Retrieval info: CONSTANT: LPM_DIRECTION STRING "SUB"
 // Retrieval info: CONSTANT: LPM_HINT STRING "ONE_INPUT_IS_CONSTANT=NO,CIN_USED=NO"
-// Retrieval info: CONSTANT: LPM_REPRESENTATION STRING "UNSIGNED"
+// Retrieval info: CONSTANT: LPM_REPRESENTATION STRING "SIGNED"
 // Retrieval info: CONSTANT: LPM_TYPE STRING "LPM_ADD_SUB"
 // Retrieval info: CONSTANT: LPM_WIDTH NUMERIC "20"
 // Retrieval info: USED_PORT: dataa 0 0 20 0 INPUT NODEFVAL "dataa[19..0]"

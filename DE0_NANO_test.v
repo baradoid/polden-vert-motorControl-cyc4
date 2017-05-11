@@ -44,12 +44,12 @@ parameter processCmd = 5;
 reg [3:0] recvHalfByteCnt = 0;
 
 reg [2:0] uartState = uartIdle;
-
-async_receiver #(.ClkFrequency(50000000), .Baud(230400)) RX(.clk(CLOCK_50),
-																				 //.BitTick(uartTick1),
-																				 .RxD(gpio0_IN[0]), 
-																				 .RxD_data_ready(uartRxDataReady), 
-																				 .RxD_data(uartRxData));
+//
+//async_receiver #(.ClkFrequency(50000000), .Baud(230400)) RX(.clk(CLOCK_50),
+//																				 //.BitTick(uartTick1),
+//																				 .RxD(gpio0_IN[0]), 
+//																				 .RxD_data_ready(uartRxDataReady), 
+//																				 .RxD_data(uartRxData));
 
 reg txdStart = 0;																
 reg [7:0] txdData;	
@@ -62,11 +62,11 @@ wire uartTxFree = ~uartTxBusy && ~uartTxBusyR;
 
 integer counter50MHz = 0; always @(posedge CLOCK_50) counter50MHz <= counter50MHz + 1;
 wire uartStartSignal = (counter50MHz[3:0]==4'hf);
-async_transmitter #(.ClkFrequency(50000000), .Baud(230400)) TX(.clk(CLOCK_50), 
-																					.TxD_start(txdStart),
-																					.TxD_data(txdData),
-																					.TxD(gpio0[2]),
-																					.TxD_busy(uartTxBusy));
+//async_transmitter #(.ClkFrequency(50000000), .Baud(230400)) TX(.clk(CLOCK_50), 
+//																					.TxD_start(txdStart),
+//																					.TxD_data(txdData),
+//																					.TxD(gpio0[2]),
+//																					.TxD_busy(uartTxBusy));
 																					
 integer sendCounter = 0;
 integer uartStartSendTimerCounter = 0;
@@ -213,11 +213,19 @@ always @(posedge CLOCK_50) begin
 end
 																				 
 wire [19:0] debugDiv;
-																				 
+
+wire [19:0] dividerW;
+wire moveDirW;				
+wire moveDirInverseW;
+wire stepClockEnaW;
+wire positionReset;
+
+wire signed [31:0] curPos0;
 //assign gpio0[3] = CLOCK_50;
-motorCtrl mr00(.CLK_50MHZ(CLOCK_50), .deltaPos(deltaPos), .moveDir(dir), .newPosSignal(newPosSignal[0]), .velocityMaxIPS(velocityImpPerSec), .dir(gpio0[0]), .step(gpio0[1]), 
-																																																				.debugDeviationPeriod(gpio0[5]),
-																																																				.div(debugDiv));
+//motorCtrl mr00(.CLK_50MHZ(CLOCK_50), .deltaPos(deltaPos), .moveDir(dir), .newPosSignal(newPosSignal[0]), .velocityMaxIPS(velocityImpPerSec), .dir(gpio0[0]), .step(gpio0[1]), 
+//																																																				.debugDeviationPeriod(gpio0[5]),
+//																																																				.div(debugDiv));
+motorCtrlSimple mrs00(.CLK_50MHZ(CLOCK_50), .reset(positionReset), .divider(dividerW[19:0]), .moveDir(moveDirW), .moveDirInvers(moveDirInverseW), .stepClockEna(stepClockEnaW), .dir(gpio0[0]), .step(gpio0[1]), .cur_position(curPos0));
 //motorCtrl mr01(.CLK_50MHZ(CLOCK_50), .deltaPos(deltaPos), .newPosSignal(newPosSignal[1]), .velocityMax_div(velocityMax_div), .dir(gpio0[2]), .step(gpio0[3]));
 /*motorCtrl mr02(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[2]), .velocityMax_div(velocityMax_div), .dir(gpio0[4]), .step(gpio0[5]));
 motorCtrl mr03(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newPosSignal[3]), .velocityMax_div(velocityMax_div), .dir(gpio0[6]), .step(gpio0[7]));
@@ -241,7 +249,15 @@ motorCtrl mr09(.CLK_50MHZ(CLOCK_50), .deltaPos(newPos[23:0]), .newPosSignal(newP
 //motorCtrl mr11(.CLK_10MHZ(CLK_SE_AR), .clock_4ms(clock_4ms), .newPos(newPos[11]), .newPosSignal(newPosSignal[11]), .dir(AGPIO[13]), .step(AGPIO[14]));
 
 //
-//nios nios(.clk_clk(CLOCK_50), .reset_reset_n(KEY[0]), .pio_external_connection_export(LED));
+nios nios(.clk_clk(CLOCK_50), .reset_reset_n(KEY[0]), 
+				.pio_leds_external_connection_export(LED[7:0]),
+				.pio_0_external_connection_in_port(curPos0),
+				.pio_0_external_connection_out_port({moveDirInverseW, positionReset, stepClockEnaW, moveDirW, dividerW[19:0]}), 
+				
+				.uart_0_external_connection_rxd(gpio0_IN[0]),
+				.uart_0_external_connection_txd(gpio0[2])
+				/*.a_16550_uart_0_rs_232_serial_sin(gpio0_IN[0]),
+				.a_16550_uart_0_rs_232_serial_sout(gpio0[2])*/);
 
 endmodule
 

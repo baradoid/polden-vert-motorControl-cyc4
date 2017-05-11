@@ -260,7 +260,9 @@ set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
-set_global_assignment -name VERILOG_FILE nios/synthesis/nios.v
+set_global_assignment -name QIP_FILE software/hw5/mem_init/meminit.qip
+set_global_assignment -name VERILOG_FILE motorCtrlSimple.v
+set_global_assignment -name VERILOG_FILE nios/synthesis/nios.v -library nios
 set_global_assignment -name QIP_FILE nios/synthesis/nios.qip
 set_global_assignment -name VERILOG_FILE motorCtrl.v
 set_global_assignment -name VERILOG_FILE async.v

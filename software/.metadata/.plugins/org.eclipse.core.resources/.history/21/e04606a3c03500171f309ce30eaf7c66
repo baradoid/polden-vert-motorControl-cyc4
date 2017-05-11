@@ -1,0 +1,19 @@
+#include "utils.h"
+unsigned char RxBuf[RXBUFSIZE];// the receiver buffer.
+int RxHead = 0; // the circular buffer index
+int RxTail = 0;
+
+unsigned char _getchar()
+{
+ alt_u8 temp;
+ while (RxTail == RxHead){
+	 nr_delay(1);
+ }
+ temp = RxBuf[RxTail];
+ if (++RxTail > (RXBUFSIZE -1))
+ {
+	 RxTail = 0;
+ }
+ 	 return(temp);
+}
+

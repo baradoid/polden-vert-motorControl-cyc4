@@ -1,0 +1,6 @@
+#pragma once
+
+extern unsigned char RxBuf[RXBUFSIZE];// the receiver buffer.
+extern int RxHead; // the circular buffer index
+extern int RxTail;
+

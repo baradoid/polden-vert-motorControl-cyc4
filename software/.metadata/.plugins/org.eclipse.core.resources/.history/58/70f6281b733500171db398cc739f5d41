@@ -1,0 +1,13 @@
+
+typedef enum {
+	idle, speedUp, speedConst, speedDown
+} TMotorState;
+
+#define SYS_CLOCK 50000000
+#define motorCount 10
+typedef struct{
+	alt_u32 speedZadIPS;
+	alt_u32 speedCurIPS;
+	TMotorState state;
+} TMotorData;
+

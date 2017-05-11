@@ -1,0 +1,33 @@
+
+**** Build of configuration Nios II for project hw4 ****
+
+make all 
+      1 [main] sh 292 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+the public mailing list cygwin@cygwin.com
+      0 [main] sh 10228 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+the public mailing list cygwin@cygwin.com
+      0 [main] echo 12852 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+Info: Building ../hw4_bsp/
+the public mailing list cygwin@cygwin.com
+make --no-print-directory -C ../hw4_bsp/
+      0 [main] pwd 7356 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+the public mailing list cygwin@cygwin.com
+      0 [main] sh 10308 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+the public mailing list cygwin@cygwin.com
+      1 [main] sh 1976 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+the public mailing list cygwin@cygwin.com
+[BSP build complete]
+      0 [main] true 8356 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+the public mailing list cygwin@cygwin.com
+      0 [main] echo 1440 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+Info: Linking hw4.elf
+the public mailing list cygwin@cygwin.com
+nios2-elf-g++  -T'../hw4_bsp//linker.x' -msys-crt0='../hw4_bsp//obj/HAL/src/crt0.o' -msys-lib=hal_bsp -L../hw4_bsp/   -Wl,-Map=hw4.map   -O0 -g -Wall   -EL -mno-hw-div -mno-hw-mul -mno-hw-mulx  -o hw4.elf obj/default/hello_world.o -lm 
+d:/altera/13.0sp1/nios2eds/bin/gnu/h-i686-mingw32/bin/../lib/gcc/nios2-elf/4.1.2/../../../../nios2-elf/bin/ld.exe: address 0x197e4 of hw4.elf section `.bss' is not within region `onchip_memory2'
+d:/altera/13.0sp1/nios2eds/bin/gnu/h-i686-mingw32/bin/../lib/gcc/nios2-elf/4.1.2/../../../../nios2-elf/bin/ld.exe: address 0x197e4 of hw4.elf section `.onchip_memory2' is not within region `onchip_memory2'
+d:/altera/13.0sp1/nios2eds/bin/gnu/h-i686-mingw32/bin/../lib/gcc/nios2-elf/4.1.2/../../../../nios2-elf/bin/ld.exe: address 0x197e4 of hw4.elf section `.bss' is not within region `onchip_memory2'
+d:/altera/13.0sp1/nios2eds/bin/gnu/h-i686-mingw32/bin/../lib/gcc/nios2-elf/4.1.2/../../../../nios2-elf/bin/ld.exe: address 0x197e4 of hw4.elf section `.onchip_memory2' is not within region `onchip_memory2'
+collect2: ld returned 1 exit status
+make: *** [hw4.elf] Error 1
+
+**** Build Finished ****

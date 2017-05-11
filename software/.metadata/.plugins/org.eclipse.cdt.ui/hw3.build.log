@@ -1,0 +1,37 @@
+
+**** Build of configuration Nios II for project hw3 ****
+
+make all 
+      0 [main] sh 13276 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+the public mailing list cygwin@cygwin.com
+      1 [main] sh 9772 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+the public mailing list cygwin@cygwin.com
+      1 [main] echo 4732 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+Info: Building ../hw3_bsp/
+the public mailing list cygwin@cygwin.com
+make --no-print-directory -C ../hw3_bsp/
+      0 [main] pwd 12820 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+the public mailing list cygwin@cygwin.com
+      1 [main] sh 13100 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+the public mailing list cygwin@cygwin.com
+      0 [main] sh 9788 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+the public mailing list cygwin@cygwin.com
+[BSP build complete]
+      0 [main] true 2832 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+the public mailing list cygwin@cygwin.com
+      1 [main] echo 3692 find_fast_cwd: WARNING: Couldn't compute FAST_CWD pointer.  Please report this problem to
+Info: Linking hw3.elf
+the public mailing list cygwin@cygwin.com
+nios2-elf-g++  -T'../hw3_bsp//linker.x' -msys-crt0='../hw3_bsp//obj/HAL/src/crt0.o' -msys-lib=hal_bsp -L../hw3_bsp/  -Wl,--defsym,exit=_exit  -Wl,-Map=hw3.map   -Os -g -Wall   -EL -mno-hw-div -mno-hw-mul -mno-hw-mulx  -o hw3.elf obj/default/hello_world_small.o -lm 
+d:/altera/13.0sp1/nios2eds/bin/gnu/h-i686-mingw32/bin/../lib/gcc/nios2-elf/4.1.2/../../../../nios2-elf/bin/ld.exe: hw3.elf section `.text' will not fit in region `onchip_memory2'
+d:/altera/13.0sp1/nios2eds/bin/gnu/h-i686-mingw32/bin/../lib/gcc/nios2-elf/4.1.2/../../../../nios2-elf/bin/ld.exe: address 0x1d9a0 of hw3.elf section `.rwdata' is not within region `onchip_memory2'
+d:/altera/13.0sp1/nios2eds/bin/gnu/h-i686-mingw32/bin/../lib/gcc/nios2-elf/4.1.2/../../../../nios2-elf/bin/ld.exe: address 0x1f4cc of hw3.elf section `.bss' is not within region `onchip_memory2'
+d:/altera/13.0sp1/nios2eds/bin/gnu/h-i686-mingw32/bin/../lib/gcc/nios2-elf/4.1.2/../../../../nios2-elf/bin/ld.exe: address 0x1f4cc of hw3.elf section `.onchip_memory2' is not within region `onchip_memory2'
+d:/altera/13.0sp1/nios2eds/bin/gnu/h-i686-mingw32/bin/../lib/gcc/nios2-elf/4.1.2/../../../../nios2-elf/bin/ld.exe: address 0x1d9a0 of hw3.elf section `.rwdata' is not within region `onchip_memory2'
+d:/altera/13.0sp1/nios2eds/bin/gnu/h-i686-mingw32/bin/../lib/gcc/nios2-elf/4.1.2/../../../../nios2-elf/bin/ld.exe: address 0x1f4cc of hw3.elf section `.bss' is not within region `onchip_memory2'
+d:/altera/13.0sp1/nios2eds/bin/gnu/h-i686-mingw32/bin/../lib/gcc/nios2-elf/4.1.2/../../../../nios2-elf/bin/ld.exe: address 0x1f4cc of hw3.elf section `.onchip_memory2' is not within region `onchip_memory2'
+d:/altera/13.0sp1/nios2eds/bin/gnu/h-i686-mingw32/bin/../lib/gcc/nios2-elf/4.1.2/../../../../nios2-elf/bin/ld.exe: region `onchip_memory2' overflowed by 29900 bytes
+collect2: ld returned 1 exit status
+make: *** [hw3.elf] Error 1
+
+**** Build Finished ****

@@ -58,7 +58,7 @@ assign debugDeviationPeriod = clock_deviation;
 wire timer10msFinal = (timer10msPulsesCnt==0);
 //wire timer15625mksFinal = (timer15625mksPulsesCnt==0);
 
-wire deviationTimerFinal = (deviationPeriodCounter==0);
+wire deviationTimerFinal = (deviationTimerPulsesCnt==0);
 
 
 reg stepClockEna = 0;
@@ -70,6 +70,7 @@ reg [19:0] movePeriodSpeedIncTimeCounter = 0;
 //parameter velocity_div_start = 24'hF424;
 parameter velocity_div_start = 20'h1E848;
 //parameter velocity_div_start = 24'h1312d0;
+//parameter velocity_div_start = 20'h61a8;
 
 
 //wire [23:0] dividerIncWire = velocity_div_start - velocityMax_div;
@@ -93,25 +94,31 @@ wire [15:0] sinVal;
 
 
 
-add20b sub20_deviaton(.dataa(velocity_div_start[19:0]), .datab(velocityMax_divLoc[19:0]), .result(velocityDivStartMaxDeltaWire[19:0])); //sub
-sinrom sinTable(.clock(CLK_50MHZ), .address(sinTableAddr[5:0]), .q(sinVal[15:0]));
+add20b sub20_deviaton1(.dataa(velocity_div_start[19:0]), .datab(velocityMax_divLoc[19:0]), .result(velocityDivStartMaxDeltaWire[19:0])); //sub
+//add20b sub20_deviaton2(.dataa(velocityMax_divLoc[19:0]), .datab(velocity_div_start[19:0]), .result(velocityDivStartMaxDeltaWireDown[19:0])); //sub
+//sinrom sinTable(.clock(CLK_50MHZ), .address(sinTableAddr[5:0]), .q(sinVal[15:0]));
 mult mpl(.dataa(sinVal[15:0]), .datab(velocityDivStartMaxDeltaReg[19:0]), .result(velocityDeviationMultSinWire[35:0]));
 
 //add20b sub20_divider(.dataa(velocity_div_start[19:0]), .datab(velocityDeviationMultSin[27:8]), .result(curVelocityDiv[19:0]));
-wire [19:0] curVelocityDiv; // = velocityMax_divLoc[19:0] + velocityDeviationMultSin[35:16];
-add20b_2 inst2(.dataa(velocityMax_divLoc[19:0]), .datab(velocityDeviationMultSinWire[35:16]), .result(curVelocityDiv[19:0]));
+//wire [19:0] curVelocityDiv; // = velocityMax_divLoc[19:0] + velocityDeviationMultSin[35:16];
+//add20b_2 inst2(.dataa(velocityMax_divLoc[19:0]), .datab(velocityDeviationMultSinWire[35:16]), .result(curVelocityDiv[19:0]));
+
+wire [19:0] curVelocityDiv = {6'h0, velocityDivStartMaxDeltaWire[19:6]} ; 
 	
 wire fifoEmpty;
 reg rdReq = 0;
 wire [36:0] fifoQ;
+
 mcCmdFifo cmdFifo(.clock(CLK_50MHZ), .data( {moveDir, deltaPos[15:0], velocityMaxIPS[19:0]} ), 
 						.rdreq(rdReq), .wrreq(newPosSignal), .empty(fifoEmpty), .q(fifoQ));
 
+reg [19:0] velocityMaxIPSLoc;
 wire [35:0] deviationPeriodWire;
-mult20bx16b inst1(.dataa(fifoQ[19:0]), .datab(speedDeviationPeriod), .result(deviationPeriodWire));
+mult20bx16b inst1(.dataa(velocityMaxIPSLoc[19:0]), .datab(speedDeviationPeriod), .result(deviationPeriodWire));
 
 wire [26:0] speedDiv; 
-speed_divis spddiv(.numer(26'd50000000), .denom(fifoQ[19:0]), .quotient(speedDiv));
+
+speed_divis spddiv(.numer(26'd50000000), .denom(velocityMaxIPSLoc), .quotient(speedDiv));
 						
 reg [15:0] deltaPosCur;
 always @(posedge CLK_50MHZ) begin
@@ -124,17 +131,14 @@ always @(posedge CLK_50MHZ) begin
 				deltaPosLoc <= fifoQ[35:20];
 				moveDirLoc <= fifoQ[36];
 				
-				divider[19:0] <= velocity_div_start; //velocity_div_start[19:0]+velocityMax_div[19:0];
 				//velocityDeviation2Max_divLoc[19:0] <= (velocity_div_start[19:0]-velocityMax_div[19:0]);
 						
 				sinTableAddr <= 0;		
 		
-				state <= calcAllValues1;
+				state <= calcAllValues1;									
 				
+				velocityMaxIPSLoc <= fifoQ[19:0];
 				
-				deviationPeriodVal <= deviationPeriodWire[30:6]; // div by 64
-				velocityMax_divLoc <= speedDiv[19:0];
-				//div <= speedDiv[19:0];
 				
 			end
 //			
@@ -159,21 +163,28 @@ always @(posedge CLK_50MHZ) begin
 		
 		calcAllValues1: begin
 			rdReq <= 1'b0;	
-			velocityDivStartMaxDeltaReg <= velocityDivStartMaxDeltaWire;
+			//velocityDivStartMaxDeltaReg <= velocityDivStartMaxDeltaWire;
 			//divider[19:0] <= curVelocityDiv[19:0]; 
 			state <= calcAllValues2;
 			
+			divider[19:0] <= velocity_div_start; //velocity_div_start[19:0]+velocityMax_div[19:0];
 			stepClockEna <= 1;
-			clockCounter <= 0;
+			//clockCounter <= 0;
 			
 			dir <= moveDirLoc;
 			deltaPosCur <= 16'h0;
 			
-			deviationTimerPulsesCnt <= 63;
+			
+			deviationPeriodVal <= deviationPeriodWire[30:6]; // div by 64
+			
+			velocityMax_divLoc <= speedDiv[19:0];
+			div <= curVelocityDiv[19:0];
 		end
 		
 		calcAllValues2: begin		
 			velocityDivStartMaxDeltaReg <= velocityDivStartMaxDeltaWire;
+			deviationTimerPulsesCnt <= 64;
+			state <= speedUpState;
 		end
 		
 		speedUpState: begin					
@@ -183,15 +194,12 @@ always @(posedge CLK_50MHZ) begin
 				deltaPosCur[15:0] <= 0;
 			end
 			if(clock_deviation) begin			
-				//if(divider > 20'h115) begin
-					div <= curVelocityDiv[19:0];
-					divider[19:0] <= curVelocityDiv[19:0]; //velocityMax_divLoc[19:0]  + velocityDeviation2MaxMultSin[27:8];
+				
+					//divider[19:0] <= curVelocityDiv[19:0];
+					divider[19:0] <= divider[19:0] - curVelocityDiv[19:0];
+					//divider[19:0] <= 20'h271;
 					sinTableAddr <= sinTableAddr + 1;
-				//end
-				//else begin
-				//	state <= speedConstState;
-				//	timer10msPulsesCnt <= 1000;
-				//end				
+				
 			end
 		end
 		
@@ -199,7 +207,7 @@ always @(posedge CLK_50MHZ) begin
 			if(timer10msFinal ) begin //РµСЃР»Рё РёСЃС‚С‘Рє С‚Р°Р№РјРµСЂ РёР»Рё РїСЂРѕС€Р»Рё РїРѕР»РѕРІРёРЅСѓ
 				state <= speedDownSpeedState;
 				//timer10msPulsesCnt <= 128;
-				deviationTimerPulsesCnt <= 63;
+				deviationTimerPulsesCnt <= 64;
 				sinTableAddr <= 63;
 				deltaPosCur <= 16'h0;
 			end
@@ -211,7 +219,8 @@ always @(posedge CLK_50MHZ) begin
 				stepClockEna <= 0;
 			end
 			if(clock_deviation) begin			
-					divider[19:0] <=  curVelocityDiv[19:0]; //velocityMax_divLoc[19:0] + velocityDeviation2MaxMultSin[27:8];
+					//divider[19:0] <=  curVelocityDiv[19:0]; //velocityMax_divLoc[19:0] + velocityDeviation2MaxMultSin[27:8];					
+					divider[19:0] <= divider[19:0] + curVelocityDiv[19:0];
 					sinTableAddr <= sinTableAddr - 1;
 			end
 
@@ -233,7 +242,7 @@ always @(posedge CLK_50MHZ) begin
 			clockCounter <= divider;
 			step <= 1'b1;			
 			//deltaPosLoc <= deltaPosLoc - 1;
-			deltaPosCur <= deltaPosCur + 16'h1;
+			//deltaPosCur <= deltaPosCur + 16'h1;
 	
 		end
 		else begin

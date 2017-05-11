@@ -1,0 +1,7 @@
+#pragma once
+#define RXBUFSIZE 128
+
+unsigned char _getchar();
+extern int RxHead; // the circular buffer index
+extern int RxTail;
+alt_u8 isDataAvailable();

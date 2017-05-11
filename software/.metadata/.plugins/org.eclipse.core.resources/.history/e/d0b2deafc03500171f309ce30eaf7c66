@@ -1,0 +1,4 @@
+#pragma once
+#define RXBUFSIZE 128
+
+unsigned char _getchar();

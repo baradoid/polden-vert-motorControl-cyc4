@@ -1,0 +1,27 @@
+#include <alt_types.h>
+
+#include "utils.h"
+
+alt_u8 RxBuf[RXBUFSIZE];// the receiver buffer.
+alt_u32 RxHead = 0; // the circular buffer index
+alt_u32 RxTail = 0;
+
+alt_u8 isDataAvailable()
+{
+	return (RxTail != RxHead);
+}
+
+unsigned char _getchar()
+{
+ alt_u8 temp;
+// while (RxTail == RxHead){
+//	 nr_delay(1);
+// }
+ temp = RxBuf[RxTail];
+ if (++RxTail > (RXBUFSIZE -1))
+ {
+	 RxTail = 0;
+ }
+ return(temp);
+}
+
